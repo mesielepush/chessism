@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from database.database.engine import init_db
 from database.routers import players, games
 
-app = FastAPI()
+app = FastAPI() 
 
 @app.on_event("startup")
 async def startup_event():

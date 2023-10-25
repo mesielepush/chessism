@@ -10,15 +10,33 @@ game_interface = DBInterface(Game)
 month_interface = DBInterface(Month)
 def get_new_links(new_links):
     ...
+def insert_players(new_players):
+    print('II')
+    profiles = mp.Manager().list()
+    params = [
+                {
+                    "player_name": player_name,
+                    "profiles": profiles,
+                }
+                for player_name in new_players
+            ]
+
+    print("Entering Pooling")
+    pool = mp.Pool(3, maxtasksperchild=1)
+    with pool:
+        pool.map(insert_player, params)
+    print("Out of the Pool")
+    return profiles
+
 def insert_player(params):
     player_name = params['player_name']
-    if player_interface.player_exists(player_name):
-         return
-    profile = {'player_name':player_name}
-    profile = PlayerCreateData(**profile)
-    params['profiles'].append(profile)
-    
-def get_new_profiles(new_players):
+    # if player_interface.player_exists(player_name):
+    #      return
+    # profile = {'player_name':player_name}
+    # profile = PlayerCreateData(**profile)
+    # params['profiles'].append(profile)
+    params['profiles'].append(player_name)
+def asaa(new_players):
     # profiles = []
     # if not player_interface.player_exists(player_name):
     #      new_players.append(player_name)
@@ -52,17 +70,20 @@ def get_new_profiles(new_players):
                 for player_name in new_players
             ]
 
-    print("Entering Pooling")
-    pool = mp.Pool(6)
-    with pool:
-        pool.map(insert_player, params)
-    print("Out of the Pool")
-    return profiles
+    print("poakispodjkapsdjong")
+    # pool = mp.Pool(6, maxtasksperchild=1)
+    # with pool:
+    #     pool.map(insert_player, params)
+    # print("Out of the Pool")
+    # return list(profiles)
+    return new_players
 
 def insert_new_players(new_players):
     print('insert begin')
-    profiles = get_new_profiles(new_players)
-    player_interface.create_all(profiles)
+    #profiles = get_new_profiles(new_players)
+    profiles = insert_players(new_players)
+    print(len(profiles))
+    #player_interface.create_all(profiles)
     return profiles
 
 def get_new_players(player_name,players_this_month):
@@ -120,18 +141,9 @@ def clean_games(game: str) -> bool:
         return False
     return True
 def validate_games(player_name, games):
-    """
-    It gets the names of every player in the new games
-    it gets the links of every game played before with the new players
-    it inserts new players to the db
-    it drops game_links already at db
-    returns new games not in the db
-    """
+    
     print(f"GAMES BEFORE CLEANING = {len(games)}")
-    # First the local constrains: more than 14 moves and formatting
     games = [game for game in games if clean_games(game)]
-    # then to check all players in games and insert the new ones
-    # then to check all if some of the games are already in the db and exclude them
     print(f"GAMES AFTER CLEANING = {len(games)}")
 
     players_and_game_id = np.array(
