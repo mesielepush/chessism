@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 CONN_STRING = os.getenv("CONN_STRING")
-print(CONN_STRING)
 from fastapi import FastAPI
 from database.database.engine import init_db
 from database.routers import players, games
