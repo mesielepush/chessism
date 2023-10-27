@@ -42,9 +42,44 @@ class PlayerResult(BaseModel):
     league: str
 class GameCreateData(BaseModel):
     id: int
-    black: str
-    white: str
+    start_time: str
+    year: int
+    month:int
+    day:int
+    white:str
+    black:str
+    white_elo:str
+    black_elo:str
+    white_result:str
+    black_result:str
+    time_control:str
+    eco:str
+    time_elapsed:str
+    termination:str
+    n_moves:str
 class GameResult(BaseModel):
     id: int
-    black: str
-    white: str
+    start_time: str
+    year: int
+    month:int
+    day:int
+    white:str
+    black:str
+    white_elo:str
+    black_elo:str
+    white_result:str
+    black_result:str
+    time_control:str
+    eco:str
+    time_elapsed:str
+    termination:str
+    n_moves:str
+class MovesCreateData(BaseModel):
+    id: int
+    moves: str
+    white_moves:str
+    black_moves:str
+    white_reaction_times:str
+    black_reaction_times:str
+    white_time_left:str
+    black_time_left:str

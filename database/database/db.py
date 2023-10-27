@@ -23,6 +23,14 @@ def player_exists_at_db(player_name: str):
         return True
     return False
 
+def open_request(sql_question:str):
+    conn = get_ask_connection()
+    with conn.cursor() as curs:
+        curs.execute(
+            sql_question
+        )
+        result = curs.fetchall()
+    return result
 
 def ask_months_in(player_name: str) -> list[tuple:tuple]:
     """
