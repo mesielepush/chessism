@@ -74,7 +74,7 @@ class GameResult(BaseModel):
     time_elapsed:str
     termination:str
     n_moves:str
-class MovesCreateData(BaseModel):
+class MoveCreateData(BaseModel):
     id: int
     moves: str
     white_moves:str

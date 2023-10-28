@@ -40,7 +40,7 @@ def create_games(data: dict) -> str:
     print(date_range)
     valid_range = just_new_dates(data['player_name'], date_range)
     games = download_months(data['player_name'],valid_range)
-    games = insert_games(data['player_name'], games)
+    games = insert_games(data['player_name'], games, valid_range)
     print('gamespkl')
     joblib.dump(games, 'games.pkl')
     print('games_pkl')

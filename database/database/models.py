@@ -58,7 +58,7 @@ class Month(Base):
     dates = Column("dates", String, nullable=False, unique=False)
     player = relationship(Player, foreign_keys=[player_name])
 
-class Moves(Base):
+class Move(Base):
     __tablename__ = "moves"
     id = Column(
         "id",

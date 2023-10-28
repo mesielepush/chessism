@@ -1,15 +1,22 @@
 import numpy as np
-from .models import PlayerCreateData
+from .models import PlayerCreateData, MonthCreateData, GameCreateData,MoveCreateData
 import concurrent
 import re
 import pandas as pd
 import multiprocessing as mp
 from database.database.db import player_exists_at_db, open_request
 from database.database.db_interface import DBInterface
-from database.database.models import Player, Game, Month
+from database.database.models import Player, Game, Month, Move
 player_interface = DBInterface(Player)
 game_interface = DBInterface(Game)
 month_interface = DBInterface(Month)
+move_interface = DBInterface(Move)
+def format_valid_range(valid_range):
+    months = ''
+    for date in valid_range:
+        format = f'{date[0]}_{date[1]}###'
+        months += format
+    return months
 def get_new_links(new_links):
     new = []
     for id_ in new_links:
@@ -190,7 +197,11 @@ def get_n_moves(raw_moves):
 
 
 def create_moves_table(
-    times: list, clean_moves: list, n_moves: int, time_bonus: int
+    times: list,
+    clean_moves: list,
+    n_moves: int,
+    time_bonus: int,
+    id_:int
 ) -> dict[str]:
     """
     it transfor the row moves and times_left into two columns
@@ -217,6 +228,7 @@ def create_moves_table(
     black_cumsub = black_times.sub(black_times.shift(-1)) + time_bonus
 
     result = {
+        "id": id_,
         "moves": "".join([str(x) + " " for x in range(1, n_moves + 1)])[:-1],
         "white_moves": "".join([str(x) + " " for x in ordered_moves[:, 0]])[:-1],
         "white_reaction_times": "".join([str(x) + " " for x in white_cumsub])[:-1],
@@ -232,12 +244,13 @@ def get_moves_data(game: str) -> tuple:
     It separates the white and black moves,
     claculates reaction times for both players
     returns a dictionary with keys:
-                        moves:["1...n_moves"],
-                        moves_white["e4..."], moves_black["e5..."],
-                        white_reaction_times["0.1,0.5,1..."], black_reaction_times["0.1,0.2,0.1..."]
-                        white_time_left["59.9,59.4,58.4"], black_time_left["59.9,59.7,59.6"]
+        moves:["1...n_moves"],
+        moves_white["e4..."], moves_black["e5..."],
+        white_reaction_times["0.1,0.5,1..."], black_reaction_times["0.1,0.2,0.1..."]
+        white_time_left["59.9,59.4,58.4"], black_time_left["59.9,59.7,59.6"]
 
     """
+    id_ = int(get_pgn_item(game, "[Link").split("/")[-1])
     time_bonus = get_time_bonus(game)
     raw_moves = (
         game.split("\n\n")[1]
@@ -252,7 +265,11 @@ def get_moves_data(game: str) -> tuple:
     if not f"{n_moves}..." in raw_moves:
         clean_moves.append("-")
         times.append("-")
-    moves_data = create_moves_table(times, clean_moves, n_moves, time_bonus)
+    moves_data = create_moves_table(times,
+                                    clean_moves,
+                                    n_moves,
+                                    time_bonus,
+                                    id_)
     return n_moves, moves_data
 def get_games_classes(params: dict) -> None:
     """
@@ -268,9 +285,8 @@ def create_game_dict(game: str) -> tuple:
     Self explanatory
     """
     game_dict = dict()
-    link = int(get_pgn_item(game, "[Link").split("/")[-1])
     
-    game_dict["id"] = link
+    game_dict["id"] = int(get_pgn_item(game, "[Link").split("/")[-1])
     game_dict["start_time"] = get_pgn_item(game, "StartTime")
     game_dict["year"] = int(get_pgn_item(game, "Date")[:4])
     game_dict["month"] = int(get_pgn_item(game, "Date")[5:7])
@@ -298,16 +314,22 @@ def format_games(games):
     moves_list = mp.Manager().list()
     params = [(game, games_list, moves_list) for game in games]
 
-    print("Entering Pooling")
+    print("Entering GAME Pooling")
     pool = mp.Pool(3, maxtasksperchild=1)
     with pool:
         pool.map(get_games_classes, params)
     print("Out of the Pool")
-
+    games_list = [GameCreateData(**game) for game in games_list]
+    moves_list = [MoveCreateData(**moves) for moves in moves_list]
     return games_list, moves_list
-def insert_games(player_name, games):
+
+def insert_games(player_name, games, valid_range):
+    valid_range = format_valid_range(valid_range)
     games = validate_games(player_name, games)
     games_list, moves_list = format_games(games)
-    return formatted_games
+    game_interface.create_all(games_list)
+    move_interface.create_all(moves_list)
+
+    return 'GAMES INSERTES AND MOVES AND WHAT NOT'
 
     
