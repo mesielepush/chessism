@@ -7,7 +7,6 @@ from .models import Base
 engine: Engine = None
 DBSession = sessionmaker()
 
-
 def init_db(connection_string: str):
     url = connection_string
     if not database_exists(url):

@@ -1,57 +1,42 @@
-#from .utils.ask_db import player_exists_at_db
-#from .chess_com_api import get_profile
-from .interface import DataInterface
-from .models import GameCreateData, GameResult
-from fastapi.responses import PlainTextResponse
-from .date_format import create_range, just_new_dates
-from .download_games import download_months
-from .games_format import insert_games
-from datetime import datetime 
-import joblib
+import multiprocessing as mp
+from database.database.models import Game
+from .format_dates import create_range, just_new_dates
+from .format_games import insert_games
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import PlainTextResponse, JSONResponse
+from .models import GameCreateData
 from database.database.db_interface import DBInterface
-from database.database.models import Player, Game, Month
-player_interface = DBInterface(Player)
-
+from .chess_com_api import download_months
+import joblib
+game_interface = DBInterface(Game)
 def html_response(content):
     return PlainTextResponse(content=content, status_code=200)
 
-
-def read_all_games(games_interface: DataInterface) -> list[GameResult]:
-    games = games_interface.read_all()
-    return [GameResult(**p) for p in games]
-
-
-def read_game(game_id: int, games_interface: DataInterface) -> GameResult:
-    game = games_interface.read_by_id(game_id)
-    return GameResult(**game)
-
-
-def create_game(
-    data: dict, games_interface: DataInterface) -> GameResult:
-    data['white'] = data['white'].lower()
-    data['black'] = data['black'].lower()
-    game = games_interface.create(GameCreateData(**data).model_dump())
-    return GameResult(**game)
+def read_game(data):
+    player = data
+    player = jsonable_encoder(player)
+    return JSONResponse(content=player)
     
-def create_games(data: dict) -> str:
+def create_games(data:dict)->str:
+    import time
+    start_create_games = time.time()
     date_range = create_range(data)
     if type(date_range) == str:
         return html_response(date_range)
-    print(date_range)
+    print('data range',date_range)
     valid_range = just_new_dates(data['player_name'], date_range)
+    print(valid_range)
+    if type(valid_range)==str:
+        return valid_range
+    print('DOWNLOADING')
+    start_download = time.time()
     games = download_months(data['player_name'],valid_range)
-    games = insert_games(data['player_name'], games, valid_range)
-    print('gamespkl')
-    joblib.dump(games, 'games.pkl')
-    print('games_pkl')
-    print('###########################')
-    print(games)
-    print('###########################')
-    return html_response('DONEEEEEEEEEEE')
-
-
-
-
-
-
+    end_download = time.time()
+    print('DOWNLOADED IN ', (end_download-start_download)/60)
+    games = insert_games(games)
+    print('DONEEEEEEEE')
+    end_create_games = time.time()
+    print('CREATE GAMES',(end_create_games-start_create_games)/60)
+    player = jsonable_encoder(valid_range)
+    return JSONResponse(content=player)
     

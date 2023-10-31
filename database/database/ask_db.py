@@ -6,76 +6,71 @@ import tempfile
 import psycopg2
 from itertools import chain
 load_dotenv()
-
-
-
-def ask_connection():
+def get_ask_connection():
     CONN_STRING = os.getenv("PSYCOPG2_CONN_STRING")
-    return psycopg2.connect(CONN_STRING)
+    return psycopg2.connect(CONN_STRING, port = 5433)
 
-def read_sql_tmpfile(query):
-    conn = ask_connection()
-    with tempfile.TemporaryFile() as tmpfile:
-        copy_sql = "COPY ({query}) TO STDOUT WITH CSV {head}".format(
-           query=query, head="HEADER"
-        )
-        cur = conn.cursor()
-        cur.copy_expert(copy_sql, tmpfile)
-        tmpfile.seek(0)
-        df = pd.read_csv(tmpfile)
-        return df
-def get_all_games(player_name, time_control):
-    if time_control:
-        time_control = f"and game.time_control='{time_control}'"
-    else:
-        time_control = ''
-    data = read_sql_tmpfile(
-    f"""
-    SELECT * FROM game
-    WHere (game.black='{player_name}' 
-    OR game.white='{player_name}')
-    {time_control}
-    ORDER BY game.year, game.month, game.day
-    """)
-    return data
-
-def get_games_where(player_name, result, color, time_control):
-    if time_control:
-        time_control = f"and game.time_control='{time_control}'"
-    else:
-        time_control = ''
-    data = read_sql_tmpfile(
-            f"""
-            SELECT * FROM game
-            WHere game.{color}='{player_name}' and game.{color}_result={result}
-            {time_control}
-            ORDER BY game.year, game.month, game.day
-            """)
-    return data
-def color_results(player_name, color):
-    color_result = dict()
-    conn = ask_connection()
+def player_exists_at_db(player_name: str):
+    conn = get_ask_connection()
     with conn.cursor() as curs:
         curs.execute(
-        f"""
-        select game.{color}_result,  COUNT(*) as how_many
-        FROM game
-        where game.{color}='{player_name}'
-        group by game.{color}_result
-        ORDER BY how_many DESC
-        """
-
+            f"select player_name from player where player_name='{player_name}'"
         )
         result = curs.fetchall()
-    color_result['win']  = [x[1] for x in result if x[0] == 1.0][0]
-    color_result['lose'] = [x[1] for x in result if x[0] == 0.0][0]
-    color_result['draw'] = [x[1] for x in result if x[0] == 0.5][0]
-    return color_result
-def get_win_draw_lose(player_name):
-    black = color_results(player_name, 'black')
-    white = color_results(player_name, 'white')
-    data = pd.DataFrame( columns = ['win','draw','lose'], index=['white','black'])
-    data.loc['white'] = pd.Series({'win':white['win'], 'draw':white['draw'], 'lose':white['lose']})
-    data.loc['black'] = pd.Series({'win':black['win'], 'draw':black['draw'], 'lose':black['lose']})
-    data.loc['total'] = pd.Series({'win': white['win'] + black['win'], 'draw':white['draw']+black['draw'], 'lose':white['lose']+black['lose']})
-    return data
+    if len(result) == 1:
+        return True
+    return False
+
+def open_request(sql_question:str):
+    conn = get_ask_connection()
+    with conn.cursor() as curs:
+        curs.execute(
+            sql_question
+        )
+        result = curs.fetchall()
+    return result
+
+def ask_months_in(player_name: str) -> list[tuple:tuple]:
+    """
+    It ask the db for the already asked months at chess com
+    it returns them as a list of tuples
+    """
+    conn = get_ask_connection()
+    with conn.cursor() as curs:
+        curs.execute(f"select dates from months where player_name='{player_name}'")
+        result = curs.fetchall()
+    join_result = list(chain.from_iterable(result))
+    result_as_list_of_tuples = [
+        (int(x.split("-")[0]), int(x.split("-")[1])) for x in join_result
+    ]
+    return result_as_list_of_tuples
+
+
+def ask_links_with_this_players(player_name, tuple_of_players) -> set():
+    """
+    Ask db the game.link for every past game of the player with any new user,
+    we need to know it's some game is already at the database or if some player is not
+    """
+    conn = get_ask_connection()
+    with conn.cursor() as curs:
+        curs.execute(
+            f"select link from game where white='{player_name}' and black in {tuple_of_players}"
+        )
+        result = curs.fetchall()
+        curs.execute(
+            f"select link from game where black='{player_name}' and white in {tuple_of_players}"
+        )
+        result_2 = curs.fetchall()
+    result = set(list(chain.from_iterable(result)))
+    result_2 = set(list(chain.from_iterable(result_2)))
+    result.update(result_2)
+    return set([int(x) for x in result])
+
+
+def get_all_players():
+    conn = get_ask_connection()
+    with conn.cursor() as curs:
+        curs.execute(f"select player_name from player")
+        result = curs.fetchall()
+    result = set(list(chain.from_iterable(result)))
+    return result

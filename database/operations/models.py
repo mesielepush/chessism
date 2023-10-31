@@ -1,19 +1,12 @@
 from pydantic import BaseModel
-from typing import Optional
 
-class MonthCreateData(BaseModel):
-    player_name: str
-    dates: str
-class MonthResult(BaseModel):
-    player_name: str
-    dates: str
+
 class PlayerCreateData(BaseModel):
     player_name: str
     name: str = 'None'
     url: str = 'None'
     title: str = 'None'
     avatar: str = 'None'
-    player_id: int = 0
     followers: int = 0
     country: str = 'None'
     location: str = 'None'
@@ -26,20 +19,7 @@ class PlayerCreateData(BaseModel):
 
 class PlayerResult(BaseModel):
     player_name: str
-    name: str
-    url: str
-    title: str
-    avatar: str
-    player_id: int  
-    followers: int
-    country: str
-    location: str
-    joined: int
-    status: str
-    is_streamer: bool
-    twitch_url: str
-    verified: bool
-    league: str
+
 class GameCreateData(BaseModel):
     id: int
     start_time: str
@@ -48,32 +28,15 @@ class GameCreateData(BaseModel):
     day:int
     white:str
     black:str
-    white_elo:str
-    black_elo:str
-    white_result:str
-    black_result:str
+    white_elo:int
+    black_elo:int
+    white_result:float
+    black_result:float
     time_control:str
     eco:str
     time_elapsed:str
     termination:str
-    n_moves:str
-class GameResult(BaseModel):
-    id: int
-    start_time: str
-    year: int
-    month:int
-    day:int
-    white:str
-    black:str
-    white_elo:str
-    black_elo:str
-    white_result:str
-    black_result:str
-    time_control:str
-    eco:str
-    time_elapsed:str
-    termination:str
-    n_moves:str
+    n_moves:int
 class MoveCreateData(BaseModel):
     id: int
     moves: str
@@ -83,3 +46,6 @@ class MoveCreateData(BaseModel):
     black_reaction_times:str
     white_time_left:str
     black_time_left:str
+class MonthCreateData(BaseModel):
+    player_name: str
+    dates: str

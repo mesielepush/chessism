@@ -1,7 +1,7 @@
 from typing import Any
-from sqlalchemy import Column, ForeignKey, Integer, String, Float
+from sqlalchemy import Column, ForeignKey, Integer, String, Float, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, mapped_column
+from sqlalchemy.orm import relationship
 from sqlalchemy.types import Boolean
 Base = declarative_base()
 
@@ -16,7 +16,6 @@ class Player(Base):
     url = Column('url', String, nullable=True)
     title = Column('title', String, nullable=True)
     avatar = Column('avatar', String, nullable=True)
-    player_id = Column('player_id', Integer, nullable=True)
     followers = Column('followers', Integer,nullable=True)
     country = Column('country', String, nullable=True)
     location = Column('location', String, nullable=True)
@@ -26,10 +25,9 @@ class Player(Base):
     twitch_url = Column('twitch_url', String, nullable=True)
     verified = Column('verified', Boolean, nullable=True)
     league = Column('league', String, nullable=True)
-    
 class Game(Base):
     __tablename__ = 'game'
-    id = Column('id',Integer, primary_key = True, unique = True)
+    id = Column('id',BigInteger, primary_key = True, unique = True)
     white = Column("white", String, ForeignKey("player.player_name"), nullable=False)
     black = Column("black", String, ForeignKey("player.player_name"), nullable=False)
     start_time = Column("start_time", String, nullable=False)
@@ -47,7 +45,6 @@ class Game(Base):
     n_moves = Column("n_moves", Integer, nullable=False)
     white_player = relationship(Player, foreign_keys=[white])
     black_player = relationship(Player, foreign_keys=[black])
-
 class Month(Base):
     __tablename__ = "months"
     player_name = Column("player_name",
@@ -62,7 +59,7 @@ class Move(Base):
     __tablename__ = "moves"
     id = Column(
         "id",
-        Integer,
+        BigInteger,
         ForeignKey("game.id"),
         primary_key=True,
         nullable=False,
