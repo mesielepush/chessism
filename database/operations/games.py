@@ -32,7 +32,7 @@ def create_games(data:dict)->str:
     games = download_months(player_name,valid_range)
     end_download = time.time()
     print('DOWNLOADED IN ', (end_download-start_download)/60)
-    games = insert_games(games)
+    insert_games(games)
     print('DONEEEEEEEE')
 
     end_create_games = time.time()
