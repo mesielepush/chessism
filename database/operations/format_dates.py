@@ -19,19 +19,20 @@ def format_months(date_range):
     return new_months
 def just_new_dates(player_name, date_range):
     if not player_interface.player_exists(player_name):
-        player_data = PlayerCreateData(**{'player_name':player_name})
+        player_profile = get_profile(player_name)
+        print(player_profile)
+        player_profile['player_name'] = player_name
+        player_data = PlayerCreateData(**player_profile)
         player_interface.create(player_data.model_dump())
     months = open_request(
         f"select dates from months where months.player_name = '{player_name}'"
         )
     if not months:
         new_months = format_months(date_range)
-        print('IM NONEEEEEEEEEEEEE')
         month_interface.create({"player_name":player_name,"dates":new_months})
         return date_range
     else:
         months = months[0][0]
-        print('QQQQQQQQQQQQQQQQQQQQQQQQQQ')
         print('month dates', months)
         months_split = [x for x in months.split('###') if len(x)>0]
         old_range = [
@@ -84,11 +85,6 @@ def get_joined_and_current_date(player_name):
     return join_at_year, join_at_month, current_date[0], current_date[1]
 
 def create_date_range(dates) -> list[tuple]:
-    """
-    Takes a str with format: from_year-from_month-to_year-to-month
-    returns the range as a list of tuples:
-    input: 2020, 1, 2020, 3 == output: [(2020,1),(2020,2),(2020,3)]
-    """
     from_year, from_month, to_year, to_month = dates
     date_range = (
         pd.date_range(

@@ -48,13 +48,15 @@ def insert_players(new_players):
     return list(profiles)
 
 def insert_new_players(new_players):
+    to_insert = []
     for player in new_players:
         if player_exists_at_db(player):
             continue
         else:
             profile = {'player_name':player}
-            profile = PlayerCreateData(**profile)
-            player_interface.create(profile.model_dump())
+            profile = PlayerCreateData(**profile).model_dump()
+            to_insert.append(profile)
+    player_interface.create_all(to_insert)
     return
 
 def get_pgn_item(game, item: str) -> str:
@@ -118,9 +120,6 @@ def validate_games(games):
             for game in games
         ]
     )
-    print('############')
-    print('players this month')
-    print('###############')
 
     players_this_month = set(players_and_game_id[:, 0])
     black_players_this_month = set(players_and_game_id[:, 1])
@@ -128,7 +127,10 @@ def validate_games(games):
     insert_new_players(players_this_month)
     
     print(f"GAMES BEFORE CLEANING = {len(games)}")
+    start_games_clean = time.time()
     games = [game for game in games if clean_games(game)]
+    end_games_clean = time.time()
+    print((end_games_clean-start_games_clean)/60, ' minutes')
     print(f"GAMES AFTER CLEANING = {len(games)}")
     if len(games) == 0:
         return 'NO NEW GAMES'
@@ -141,13 +143,11 @@ def get_result(user_name, result):
     else:
         return 0
 
-
 def get_time_elapsed(game):
     start = get_pgn_item(game, "Date") + " " + get_pgn_item(game, "StartTime")
     end = get_pgn_item(game, "EndDate") + " " + get_pgn_item(game, "EndTime")
     delta = pd.to_datetime(end) - pd.to_datetime(start)
     return str(delta).split()[-1]
-
 
 def clean_termination(one_termination: str):
     if "drawn" in one_termination:
@@ -169,13 +169,11 @@ def get_eco(game: str):
     except:
         return "no_eco"
 
-
 def get_time_bonus(game):
     time_control = get_pgn_item(game, "TimeControl")
     if "+" in time_control:
         return int(time_control.split("+")[-1])
     return 0
-
 
 def get_n_moves(raw_moves):
     return max(
@@ -301,12 +299,15 @@ def create_game_dict(game: str) -> tuple:
 
     return game_dict, moves_data
 def format_games(games):
+    games_list = []
+    moves_list = []
     for game in games:
         game_dict, moves_data = create_game_dict(game)
-        assert GameCreateData(**game_dict)
-        assert MoveCreateData(**moves_data)
-        game_interface.create(game_dict)
-        move_interface.create(moves_data)
+        games_list.append(GameCreateData(**game_dict).model_dump())
+        moves_list.append(MoveCreateData(**moves_data).model_dump())
+
+    game_interface.create_all(games_list)
+    move_interface.create_all(moves_list)
 
 def insert_games(games):
     print('VALID GAMES #############')

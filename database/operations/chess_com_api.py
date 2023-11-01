@@ -7,7 +7,7 @@ import concurrent
 import time
 load_dotenv(".env")
 def get_profile(player_name):
-    PLAYER = os.getenv("PLAYER").replace("{player_name}", player_name.lower())
+    PLAYER = os.getenv("PLAYER").replace("{player_name}", player_name)
     USER_AGENT = os.getenv('USER_AGENT')
     response = requests.get(PLAYER, timeout=3, headers = {"User-Agent": USER_AGENT})
     
